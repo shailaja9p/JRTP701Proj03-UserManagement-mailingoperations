@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: JRTP701-MiniProj03-UserManagement
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/ntspbms616db
+    username: root
+    password: root
+  jpa:
+    show-sql: true
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    hibernate:
+      ddl-auto: update
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: donthulashailaja@gmail.com
+    password: yvnwjmsujeocwgjj
+    properties:
+      mail:
+        transport: 
+          protocol: smtp
+        smtp:
+          port: 587
+          auth: true
+          starttls:
+            enable: true
+            required: true
+server:
+  port: 4041
+mailbody:
+  registeruser:
+    location: src/main/java/com/lifetree/service/user_registartion_body.txt
+  recoverpwd:
+    location: src/main/java/com/lifetree/service/recover_pwd_body.txt 
+user:
+  master:
+    messages:
+      save-msg:  User is saved with the id, Check mail for Temperory password
+      fail-msg: Problem in Resgistration of user
+      activate-success: User is Activated with new Password
+      activate-failure: User is not found for Activation
+      login-success: Valid Credentials and Login Successful
+      login-failure: User is not found with the given email and password
+      inactive: User is not Active
+      update-success: User Details are updated
+      update-failure: User not found for updation
+
+             
+  
