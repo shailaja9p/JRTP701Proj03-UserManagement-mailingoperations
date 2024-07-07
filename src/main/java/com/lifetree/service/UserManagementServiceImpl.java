@@ -12,6 +12,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
 
+import com.lifetree.advice.UserNotFoundException;
 import com.lifetree.bindings.ActivateUser;
 import com.lifetree.bindings.LoginCredentials;
 import com.lifetree.bindings.RecoverPassword;
@@ -49,7 +50,7 @@ public class UserManagementServiceImpl implements IUserManagementService {
 		master.setPassword(tempPwd);
 		master.setActive_sw("InActive");
 		UserMaster savedUser= userRepo.save(master);
-		// TODO  :: send email.
+		// send email.
 		String subject="User Registartion success";
 		String body=readEmailBody(env.getProperty("mailbody.registeruser.location"),user.getName(),tempPwd);
 		emailUtils.sendEmailMessage(user.getEmail(), subject, body);
@@ -78,13 +79,13 @@ public class UserManagementServiceImpl implements IUserManagementService {
 	public String activateUserAccount(ActivateUser user) {
 			
 		UserMaster entity = userRepo.findByEmailAndPassword(user.getEmail(), user.getTempPassword());
-		if(entity==null) {
-			return messages.get(AppConstants.activatefailure);
-		}else {
+		if(entity!=null) {
 			entity.setPassword(user.getConfirmPassword());
 			entity.setActive_sw("Active");
 			UserMaster updatedEntity = userRepo.save(entity);
 			return messages.get(AppConstants.activatesuccess);
+		}else {
+			throw new UserNotFoundException(" User is not found for Activation");
 		}
 	}
 
@@ -99,21 +100,25 @@ public class UserManagementServiceImpl implements IUserManagementService {
 		if(list.size()!=0) {
 			UserMaster entity = list.get(0);
 			return	 entity.getActive_sw().equalsIgnoreCase("Active")?messages.get(AppConstants.loginsuccess):messages.get(AppConstants.inactive);
+		}else {
+			throw new UserNotFoundException("Login is Failed: email and password is invalid");
 		}
-		return messages.get(AppConstants.loginfailure);
 	}
 
 	@Override
 	public List<UserAccount> listUsers() {
 		List<UserMaster> list = userRepo.findAll();
-		
+		if(list.size()!=0) {
 		List<UserAccount> listUsers = list.stream().map(entity->{
 			UserAccount user= new UserAccount();
 			BeanUtils.copyProperties(entity, user);
 			return user;
 		}).toList();
-		
 		return listUsers;
+		}else {
+			throw new UserNotFoundException("DB is empty , no user is found");
+		}
+		
 	}
 
 	@Override
@@ -123,8 +128,11 @@ public class UserManagementServiceImpl implements IUserManagementService {
 		if(opt.isPresent()) {
 			 account = new UserAccount();
 			BeanUtils.copyProperties(opt.get(), account);
+		}else {
+			throw new UserNotFoundException("User is not found with the specified id");
 		}
 		return account;
+		//return userRepo.findById(id).orElseThrow(()->new UserNotFoundException("User is not found with the specified id"+id));
 	}
 
 	/*@Override
@@ -151,6 +159,8 @@ public class UserManagementServiceImpl implements IUserManagementService {
 		if(master!=null) {
 			account= new UserAccount();
 			BeanUtils.copyProperties(master, account);
+		}else {
+			throw new UserNotFoundException("User is not found with the specified email and name");
 		}
 		return account;
 	}
@@ -163,8 +173,9 @@ public class UserManagementServiceImpl implements IUserManagementService {
 			BeanUtils.copyProperties(user,entity);
 			userRepo.save(entity);
 			return messages.get(AppConstants.updateSuccess);
+		}else {
+			throw new UserNotFoundException("User is not found for updation");
 		}
-		return  messages.get(AppConstants.updateFailure);
 	}
 
 	@Override
@@ -173,8 +184,9 @@ public class UserManagementServiceImpl implements IUserManagementService {
 		if (opt.isPresent()) {
 			userRepo.deleteById(id);
 			return "user is deleted";
+		}else {
+			throw new UserNotFoundException("User is not found for deletion");
 		}
-		return "user is not found for deletion";
 	}
 
 	@Override
@@ -185,12 +197,14 @@ public class UserManagementServiceImpl implements IUserManagementService {
 			master.setActive_sw(status);
 			userRepo.save(master);
 			return "user status is changed";
+		}else {
+			throw new UserNotFoundException("User is not found for status changing operation");
 		}
-		return "user not found for chnging status";
+		
 	}
 
 	@Override
-	public String recoverPassword(RecoverPassword recover)throws Exception {
+	public String recoverPassword(RecoverPassword recover) throws Exception {
 		UserMaster master = userRepo.findByEmailAndName(recover.getEmail(), recover.getName());
 		if(master!=null) {
 			String pwd= master.getPassword();
@@ -199,8 +213,9 @@ public class UserManagementServiceImpl implements IUserManagementService {
 			String mailBody=readEmailBody(env.getProperty("mailbody.recoverpwd.location"), recover.getName(), pwd);
 			emailUtils.sendEmailMessage(recover.getEmail(), subject, mailBody);
 			return pwd;
+		}else {
+			throw new UserNotFoundException("email and name is not found to Recover password");
 		}
-		return "email and name is not found";
 	}
 
 	private String generateRandomPassword(int length)

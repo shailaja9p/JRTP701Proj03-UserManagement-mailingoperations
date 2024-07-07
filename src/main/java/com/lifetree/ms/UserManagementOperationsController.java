@@ -1,5 +1,6 @@
 package com.lifetree.ms;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.lifetree.advice.ErrorDetails;
+import com.lifetree.advice.UserNotFoundException;
 import com.lifetree.bindings.ActivateUser;
 import com.lifetree.bindings.LoginCredentials;
 import com.lifetree.bindings.RecoverPassword;
@@ -29,115 +32,92 @@ public class UserManagementOperationsController {
 	private IUserManagementService userService;
 
 	@PostMapping("/save")
-	public ResponseEntity<String> registerUser(@RequestBody UserAccount user) throws Exception{
+	public ResponseEntity<String> registerUser(@RequestBody UserAccount user) throws Exception {
 		try {
 			String msg = userService.registerUser(user);
 			return new ResponseEntity<String>(msg, HttpStatus.CREATED);
-		} catch (Exception e) {
+		} /*catch (UserNotFoundException e) {
+		System.out.println("UserManagementOperationsController.registerUser()");
+			ErrorDetails details= new ErrorDetails(LocalDateTime.now(), e.getMessage(), "404-Unable to register");
+			return new ResponseEntity<ErrorDetails>(details,HttpStatus.NOT_FOUND);}*/
+		catch (Exception e) {
 			e.printStackTrace();
 			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
 	@PostMapping("/activate")
-	public ResponseEntity<String> activateUser(@RequestBody ActivateUser user){
-		try {
+	public ResponseEntity<String> activateUser(@RequestBody ActivateUser user) {
 			String msg = userService.activateUserAccount(user);
 			return new ResponseEntity<String>(msg, HttpStatus.CREATED);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-		}
 	}
+
 	@PostMapping("/login")
 	public ResponseEntity<String> loginUser(@RequestBody LoginCredentials user) {
-		try {
 			String loginMsg = userService.login(user);
 			return new ResponseEntity<String>(loginMsg, HttpStatus.OK);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-	}
 
 	// public List<UserAccount> listUsers();
 	@GetMapping("/report")
 	public ResponseEntity<?> getAllUsers() {
-		try {
 			List<UserAccount> list = userService.listUsers();
 			return new ResponseEntity<List<UserAccount>>(list, HttpStatus.OK);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-	}
 
 	@GetMapping("/showUserById/{id}")
-	public ResponseEntity<?> showUserByUserId(@PathVariable Integer id) {
-		try {
-			UserAccount userAccount = userService.showUserByUserId(id);
-			return new ResponseEntity<UserAccount>(userAccount, HttpStatus.OK);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+	public ResponseEntity<UserAccount> showUserByUserId(@PathVariable Integer id) {
+		// try {
+		UserAccount userAccount = userService.showUserByUserId(id);
+		return new ResponseEntity<UserAccount>(userAccount, HttpStatus.OK);
+		/*
+		 * } catch (Exception e) { e.printStackTrace(); return new
+		 * ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR); }
+		 */
 	}
 
 	@GetMapping("showUserByEmailAndName/{email}/{name}")
-	public ResponseEntity<?> showUsersByMainAndName(@PathVariable String email, @PathVariable String name) {
-		try {
-			UserAccount userAccount = userService.showUserByEmailAndName(email, name);
-			return new ResponseEntity<UserAccount>(userAccount, HttpStatus.OK);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+	public ResponseEntity<UserAccount> showUsersByMainAndName(@PathVariable String email, @PathVariable String name) {
+		// try {
+		UserAccount userAccount = userService.showUserByEmailAndName(email, name);
+		return new ResponseEntity<UserAccount>(userAccount, HttpStatus.OK);
+		/*
+		 * } catch (Exception e) { e.printStackTrace(); return new
+		 * ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR); }
+		 */
 	}
 
-	// public String updateUser(UserAccount user);
 	@PutMapping("/updateUser")
 	public ResponseEntity<String> updateUserDetails(@RequestBody UserAccount user) {
-		try {
-			String msg = userService.updateUser(user);
-			return new ResponseEntity<String>(msg, HttpStatus.OK);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+		String msg = userService.updateUser(user);
+		return new ResponseEntity<String>(msg, HttpStatus.OK);
 	}
 
-	// public String deleteUserById(Integer id);
 	@DeleteMapping("/delete/{id}")
 	public ResponseEntity<String> deleteUser(@PathVariable Integer id) {
-		try {
-			String msg = userService.deleteUserById(id);
-			return new ResponseEntity<String>(msg, HttpStatus.OK);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+		String msg = userService.deleteUserById(id);
+		return new ResponseEntity<String>(msg, HttpStatus.OK);
 	}
-	// public String changeUserStatus(Integer id,String status);
+
 	@PatchMapping("/changeStatus/{id}/{status}")
-	public ResponseEntity<String> changeStatus(@PathVariable Integer id,@PathVariable String status) {
-		try {
-			String msg = userService.changeUserStatus(id, status);
-			return new ResponseEntity<String>(msg, HttpStatus.OK);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+	public ResponseEntity<String> changeStatus(@PathVariable Integer id, @PathVariable String status) {
+		String msg = userService.changeUserStatus(id, status);
+		return new ResponseEntity<String>(msg, HttpStatus.OK);
 	}
+
 	@PostMapping("/recoverPassword")
-	public ResponseEntity<String> recoverPassword(@RequestBody RecoverPassword password){
+	public ResponseEntity<?> recoverPassword(@RequestBody RecoverPassword password) {
 		try {
 			String resultMsg = userService.recoverPassword(password);
 			return new ResponseEntity<String>(resultMsg, HttpStatus.OK);
-		}catch (Exception e) {
+		}catch(UserNotFoundException unf) {
+			System.out.println("UserManagementOperationsController.recoverPassword()");
+			ErrorDetails details= new ErrorDetails(LocalDateTime.now(),unf.getMessage(),"404-User Not Found to recover password");
+			return new ResponseEntity<ErrorDetails>(details,HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		catch (Exception e) {
 			e.printStackTrace();
 			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 }
-
-
